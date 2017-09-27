@@ -215,25 +215,32 @@ static void frudp_sedp_rx_sub_info(const sedp_topic_info_t *info)
 #endif
            
     if (!pub->topic_name || !pub->type_name)
+    {
       continue; // sanity check. some built-ins don't have names.
+    }
     if (strcmp(pub->topic_name, info->topic_name))
       continue; // not the same topic. move along.
     if (strcmp(pub->type_name, info->type_name))
     {
-      printf("    SEDP type mismatch: [%s] != [%s]\r\n",
-             pub->type_name, info->type_name);
+#ifdef SEDP_VERBOSE
+      printf("    SEDP type mismatch: [%s] != [%s]\r\n", pub->type_name, info->type_name);
+#endif
       continue;
     }
-    printf("    hooray! heard a request for a topic we publish: [%s]\r\n",
-           pub->topic_name);
+#ifdef SEDP_VERBOSE
+    printf("    hooray! heard a request for a topic we publish: [%s]\r\n", pub->topic_name);
+#endif
     // see if we already have a writer for this subscriber
     bool found = false;
+    
     for (unsigned j = 0; !found && j < g_frudp_num_writers; j++)
     {
       frudp_writer_t *w = &g_frudp_writers[j];
       if (frudp_guid_identical(&w->reader_guid, &info->guid))
       {
-        printf("    nah, already had it in our list of readers\r\n");
+#ifdef SEDP_VERBOSE
+        printf("nah, already had it in our list of readers\r\n");
+#endif
         found = true;
       }
     }

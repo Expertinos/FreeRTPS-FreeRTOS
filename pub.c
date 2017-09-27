@@ -532,6 +532,7 @@ bool frudp_publish_user_msg(frudp_pub_t *pub,
   for (int i = 0; i < g_frudp_num_writers; i++)
   {
     frudp_writer_t *w = &g_frudp_writers[i];
+
     if (w->writer_eid.u == pub->writer_eid.u)
     {
       // we want to send here. if we haven't already sent to the same

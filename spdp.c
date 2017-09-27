@@ -143,7 +143,6 @@ static void frudp_spdp_rx_data(frudp_receiver_state_t *rcvr, const frudp_submsg_
   {
     if (g_frudp_disco_num_parts < FRUDP_DISCO_MAX_PARTS)
     {
-      led_off();
       const int p_idx = g_frudp_disco_num_parts; // save typing
       frudp_part_t *p = &g_frudp_disco_parts[p_idx];
       *p = *part; // save everything plz
