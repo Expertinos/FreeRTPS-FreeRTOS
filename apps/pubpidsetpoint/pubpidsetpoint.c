@@ -1,18 +1,18 @@
 #include <stdio.h>
 #include "freertps/freertps.h"
-#include "std_msgs/string.h"
+#include "std_msgs/uint32.h"
 #include "freertps/RTOSInterface.h"
 
-//Chatter publisher task
+//Voltage setpoint publisher task
 static void pubTask( void *parameters );
 
-//Voltage publisher variable
+//Voltage setpoint publisher variable
 frudp_pub_t *pub;
 
 //Device ethernet MAC address
-uint8_t ucMACAddress[ 6 ] = { 0x2C, 0x4D, 0x59, 0x01, 0x23, 0x53 };
+uint8_t ucMACAddress[ 6 ] = { 0x2C, 0x4D, 0x59, 0x01, 0x23, 0x52 };
 //Desired IP parameter if DHCP do not work
-static const uint8_t ucIPAddress[ 4 ]        = { 192, 168, 2, 153 };
+static const uint8_t ucIPAddress[ 4 ]        = { 192, 168, 2, 152 };
 static const uint8_t ucNetMask[ 4 ]          = { 255, 255, 255, 0 };
 static const uint8_t ucGatewayAddress[ 4 ]   = { 192, 168, 2, 0 };
 static const uint8_t ucDNSServerAddress[ 4 ] = { 208, 67, 222, 222 };
@@ -39,7 +39,7 @@ void setup( void )
   //Add here peripheral init function, subscribers, publishers and general tasks
 
   //Pubs here. Example pub = freertps_create_pub( topicName, typeName );
-  pub = freertps_create_pub( "chatterr", std_msgs__string__type.rtps_typename );
+  pub = freertps_create_pub( "desiredVolt", std_msgs__uint32__type.rtps_typename );
 
   //Subs here. Example freertps_create_sub( topicName, typeName, handlerTask, dataQueueSize );
 
@@ -47,26 +47,32 @@ void setup( void )
   xTaskCreate( pubTask, "pubTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL );
 }
 
-//Voltage publisher task
+//Uint32 publisher task
 static void pubTask( void *parameters )
 {
-	//FreeRTPS publisher variables
-	struct std_msgs__string msg;
-	char data_buf[ 50 ] = { 0 };
-	uint8_t cdr[ 50 ] = { 0 };
-	int cdr_len;
-	int cont = 0;
+  //FreeRTPS publisher variables
+  uint8_t cdr[ 20 ] = { 0 };
+  int cdr_len;
+  struct std_msgs__uint32 digital12bitsVoltage;
 
-  msg.data = data_buf;
+  //A discrete sin wave oscilating from -1.5 to 1.5 in 20 steps
+  double voltageSetpoints[ 20 ] = { 0, 0.463, 0.881, 1.213, 1.426, 1.5, 1.427, 1.2145, 0.883, 0.4655, 0, -0.463, -0.881, -1.213, -1.426, -1.5, -1.427, -1.2145, -0.883, -0.4655 };
+  //Variable to store the actual position of array to read
+  int pos = 0;
 
   while( true )
   {
-  	//Fomating the string
-  	snprintf( msg.data, sizeof( data_buf ), "Sending: %d", cont++ );
-  	cdr_len = serialize_std_msgs__string( &msg, cdr, sizeof( cdr ) );
-    //Publish string information, cdr, on publisher "pub", which send data to topic "chatter"
+    //Blink led each time that loop start
+    led_toggle();
+    //Setting the new position on the array to get the next value
+    pos = ( pos + 1 ) % 20;
+    //Offset the value and multiplying for 1365, getting a final value from 0 to 4096
+    digital12bitsVoltage.data = ( uint32_t )( ( voltageSetpoints[ pos ] + 1.5 ) * 1365.0 );
+    //serialize the data
+    cdr_len = serialize_std_msgs__uint32( &digital12bitsVoltage, cdr, sizeof( cdr ) );
+    //Publish the data
     freertps_publish( pub, cdr, cdr_len );
     //Task period
-    vTaskDelay( 250 / portTICK_PERIOD_MS );
+    vTaskDelay( 50 / portTICK_PERIOD_MS );
   }
 }

@@ -7,7 +7,7 @@
 static void chatterSubTask( void *parameters );
 
 //Device ethernet MAC address
-uint8_t ucMACAddress[ 6 ] = { 0x2C, 0x4D, 0x59, 0x01, 0x23, 0x49 };
+uint8_t ucMACAddress[ 6 ] = { 0x2C, 0x4D, 0x59, 0x01, 0x23, 0x50 };
 //Desired IP parameter if DHCP do not work
 static const uint8_t ucIPAddress[ 4 ]        = { 192, 168, 2, 150 };
 static const uint8_t ucNetMask[ 4 ]          = { 255, 255, 255, 0 };

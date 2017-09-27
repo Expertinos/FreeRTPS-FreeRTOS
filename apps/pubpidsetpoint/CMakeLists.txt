@@ -1,0 +1,1 @@
+freertps_add_executable(pubpidsetpoint pubpidsetpoint.c)

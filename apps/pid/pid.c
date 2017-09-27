@@ -3,12 +3,15 @@
 #include "std_msgs/uint32.h"
 #include "freertps/RTOSInterface.h"
 
+//If use PID is set to 1 the program use closed loop control, if not the program use open loop control
+#define usePID 0
+
 //PID control task
 static void ctrlTask( void *parameters );
 //Voltage publisher task
-static void pubTask( void *parameters );
+static void pubCurVoltTask( void *parameters );
 //Topic setPoint, uint32, subscriber task
-static void chatterSubTask( void *parameters );
+static void desiredVoltSubTask( void *parameters );
 
 //PWM init function
 void initPWM();
@@ -20,12 +23,12 @@ uint16_t getADCValue();
 //Voltage publisher variable
 frudp_pub_t *pub;
 //PID voltage setpoint variable. Start with 2048 what means 1.5 volts
-double setPoint = 2048;
+uint32_t setPoint = 2048.0;
 
 //Device ethernet MAC address
-uint8_t ucMACAddress[ 6 ] = { 0x2C, 0x4D, 0x59, 0x01, 0x23, 0x49 };
+uint8_t ucMACAddress[ 6 ] = { 0x2C, 0x4D, 0x59, 0x01, 0x23, 0x51 };
 //Desired IP parameter if DHCP do not work
-static const uint8_t ucIPAddress[ 4 ]        = { 192, 168, 2, 150 };
+static const uint8_t ucIPAddress[ 4 ]        = { 192, 168, 2, 151 };
 static const uint8_t ucNetMask[ 4 ]          = { 255, 255, 255, 0 };
 static const uint8_t ucGatewayAddress[ 4 ]   = { 192, 168, 2, 0 };
 static const uint8_t ucDNSServerAddress[ 4 ] = { 208, 67, 222, 222 };
@@ -56,13 +59,13 @@ void setup( void )
   initPWM();
 
   //Pubs here. Example pub = freertps_create_pub( topicName, typeName );
-  pub = freertps_create_pub( "voltage", std_msgs__uint32__type.rtps_typename );
+  pub = freertps_create_pub( "currentVolt", std_msgs__uint32__type.rtps_typename );
 
   //Subs here. Example freertps_create_sub( topicName, typeName, handlerTask, dataQueueSize );
-  freertps_create_sub( "setPoint", std_msgs__uint32__type.rtps_typename, chatterSubTask, 10 );
+  freertps_create_sub( "desiredVolt", std_msgs__uint32__type.rtps_typename, desiredVoltSubTask, 10 );
 
   //General tasks here. ctrlTask with greater priority
-  xTaskCreate( pubTask, "pubTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL );
+  xTaskCreate( pubCurVoltTask, "pubCurVoltTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL );
   xTaskCreate( ctrlTask, "ctrlTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL );
 }
 
@@ -82,6 +85,7 @@ static void ctrlTask( void *parameters )
   //PID loop
   while( true )
   {
+#if usePID == 1
     //Doing the calculations
     y2 = y1;
     y1 = y0;
@@ -89,24 +93,27 @@ static void ctrlTask( void *parameters )
     e1 = e0;
     e0 = ( double )( setPoint ) - ( double )( getADCValue() );
     y0 = y2 + kp * ( e0 - e2 ) + ki * ( e0 + 2 * e1 + e2 ) + kd * ( e0 - 2 * e1 + e2 );
-    y0 = ( uint16_t )( y0 ) << 4;
+#else
+    //Considering that we received a 12 bit value, multiply it by 4 
+    y0 = setPoint << 4;
+#endif
 
     //Saturating at maximum value
-    if( y0 > 0x0FFE )
-      y0 = 0x0FFF;
+    if( y0 > ( double )( 0xFFFE ) )
+      y0 = ( double )( 0xFFFF );
     //Saturating at minimum value
-    if( y0 < 0x0001 )
-      y0 = 0x0000;
+    if( y0 < ( double )( 0x0001 ) )
+      y0 = ( double )( 0x0000 );
 
     //Setting the new PWM value to the controled system
-    TIM4->CCR4 = ( ( uint16_t )y0 << 4 );
+    TIM4->CCR4 = ( uint16_t )( y0 );
     //Delay sampleTime milliseconds to get the correct PID time control
     vTaskDelay( ( sampleTime * 1000.0 ) / portTICK_PERIOD_MS );
   }
 }
 
 //Voltage publisher task
-static void pubTask( void *parameters )
+static void pubCurVoltTask( void *parameters )
 {
   //FreeRTPS publisher variables
   uint8_t cdr[ 20 ] = { 0 };
@@ -127,7 +134,7 @@ static void pubTask( void *parameters )
 }
 
 //Function to receive messages from setPoint topic
-static void chatterSubTask( void *parameters )
+static void desiredVoltSubTask( void *parameters )
 {
   //Queue responsible for handle receiver information on "setPoint" topic
   QueueHandle_t sQueue = ( QueueHandle_t )parameters;
