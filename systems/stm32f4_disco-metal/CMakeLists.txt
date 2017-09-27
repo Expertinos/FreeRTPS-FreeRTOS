@@ -15,7 +15,7 @@ add_library(freertos_portable ../../FreeRTOS/FreeRTOS_Plus_UDP/portable/BufferMa
                               ../../FreeRTOS/FreeRTOS/portable/Common/mpu_wrappers.c)
 
 set(SYSTEM_EXTRA_LIBS  "stm32_common metal_common" CACHE STRING "extra system libs")
-set(SYSTEM_APPS  "talker listener pid" CACHE STRING "applications for this system")
+set(SYSTEM_APPS "listener pid pubpidsetpoint talker" CACHE STRING "applications for this system")
 
 #set(SYSTEM_NO_ROSIDL_APPS "talker_no_rosidl listener_no_rosidl" CACHE STRING "")
 if (NOT freertps_standalone)

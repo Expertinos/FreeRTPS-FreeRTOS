@@ -13,10 +13,10 @@
 extern uint8_t ucMACAddress[ 6 ];
 extern volatile int FRUDP_IP4_ADDR;
 
-#define FRUDP_MAX_PUBS 15
-#define FRUDP_MAX_SUBS 15
-#define FRUDP_MAX_READERS 15
-#define FRUDP_MAX_WRITERS 15
+#define FRUDP_MAX_PUBS 10
+#define FRUDP_MAX_SUBS 10
+#define FRUDP_MAX_READERS 10
+#define FRUDP_MAX_WRITERS 10
 #define FRUDP_DISCO_MAX_PARTS 10
 
 #define FRUDP_MAX_TOPIC_NAME_LEN 128
