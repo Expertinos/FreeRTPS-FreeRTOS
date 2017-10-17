@@ -1,6 +1,6 @@
 # FreeRTPS+FreeRTOS
 Integration between FreeRTOS and FreeRTPS
-Documentation will be available soon.
+Documentation is available at http://wiki.ros.org/FreeRTPS%2BFreeRTOS.
 
 # This package uses FreeRTPS
 FreeRTPS is a free, portable, minimalist RTPS implementation
